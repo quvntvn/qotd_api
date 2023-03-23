@@ -4,7 +4,7 @@ info:
   description: API permettant de récupérer, ajouter, mettre à jour et supprimer des citations aléatoires à partir d'une base de données PostgreSQL
   version: 1.0.0
 servers:
-  - url: http://127.0.0.1:5000
+  - url: https://qotd-api.herokuapp.com/api/
 paths:
   /api/random_quote:
     get:
