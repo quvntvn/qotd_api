@@ -1,3 +1,6 @@
+from flask_restful import Resource
+from flask import jsonify
+from datetime import datetime
 from flask import Flask, request, jsonify
 from flask_restful import Api, Resource
 from flask import send_from_directory
@@ -6,6 +9,49 @@ import random
 
 app = Flask(__name__)
 api = Api(app)
+
+
+def random_seed_based_on_date():
+    today = datetime.now()
+    seed = today.year + today.month + today.day
+    return seed
+
+
+class DailyQuote(Resource):
+    def get(self):
+        random.seed(random_seed_based_on_date())
+
+        conn = psycopg2.connect(
+            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
+        cur = conn.cursor()
+
+        cur.execute("SELECT COUNT(*) FROM citations;")
+        total_citations = cur.fetchone()[0]
+
+        if total_citations > 0:
+            random_id = random.randint(1, total_citations)
+            cur.execute("SELECT * FROM citations WHERE id=%s;", (random_id,))
+            quote = cur.fetchone()
+
+            if quote:
+                quote_data = {
+                    "id": quote[0],
+                    "auteur": quote[1],
+                    "date_creation": str(quote[2]),
+                    "citation": quote[3]
+                }
+            else:
+                quote_data = {"error": "Citation not found"}
+        else:
+            quote_data = {"error": "No citations in the database"}
+
+        cur.close()
+        conn.close()
+
+        return jsonify(quote_data)
+
+
+api.add_resource(DailyQuote, '/api/daily_quote')
 
 
 @app.route('/swagger/<path:path>')
