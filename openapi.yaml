@@ -210,3 +210,37 @@ paths:
                   error:
                     type: string
                     description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
+  /api/daily_quote:
+    get:
+      summary: Récupère une citation aléatoire du jour
+      responses:
+        "200":
+          description: Citation récupérée avec succès
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                    description: Identifiant unique de la citation
+                  auteur:
+                    type: string
+                    description: Nom de l'auteur de la citation
+                  citation:
+                    type: string
+                    description: Texte de la citation elle-même
+                  date_creation:
+                    type: string
+                    format: date
+                    description: Date à laquelle la citation a été faite
+        "404":
+          description: Citation non trouvée dans la base de données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
