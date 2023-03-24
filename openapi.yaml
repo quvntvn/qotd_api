@@ -244,3 +244,39 @@ paths:
                   error:
                     type: string
                     description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
+  /api/quotes:
+    get:
+      summary: Récupère toutes les citations de la base de données
+      responses:
+        "200":
+          description: Citations récupérées avec succès
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: integer
+                      description: Identifiant unique de la citation
+                    auteur:
+                      type: string
+                      description: Nom de l'auteur de la citation
+                    citation:
+                      type: string
+                      description: Texte de la citation elle-même
+                    date_creation:
+                      type: string
+                      format: date
+                      description: Date à laquelle la citation a été faite
+        "404":
+          description: Aucune citation trouvée dans la base de données
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    description: Message d'erreur expliquant pourquoi aucune citation n'a été trouvée dans la base de données

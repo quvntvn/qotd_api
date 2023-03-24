@@ -54,6 +54,35 @@ class DailyQuote(Resource):
 api.add_resource(DailyQuote, '/api/daily_quote')
 
 
+class AllQuotes(Resource):
+    def get(self):
+        conn = psycopg2.connect(
+            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
+        cur = conn.cursor()
+
+        cur.execute(
+            "SELECT id, auteur, citation, date_creation FROM citations;")
+        quotes = cur.fetchall()
+
+        quotes_data = []
+        for quote in quotes:
+            quote_data = {
+                "id": quote[0],
+                "auteur": quote[1],
+                "citation": quote[2],
+                "date_creation": quote[3].strftime('%Y-%m-%d')
+            }
+            quotes_data.append(quote_data)
+
+        cur.close()
+        conn.close()
+
+        return jsonify(quotes_data)
+
+
+api.add_resource(AllQuotes, "/api/quotes")
+
+
 @app.route('/swagger/<path:path>')
 def send_swagger(path):
     return send_from_directory('swagger', path)
