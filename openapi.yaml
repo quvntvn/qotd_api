@@ -244,7 +244,7 @@ paths:
                   error:
                     type: string
                     description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
-  /api/quotes:
+  /quotes:
     get:
       summary: Récupère toutes les citations de la base de données
       responses:
