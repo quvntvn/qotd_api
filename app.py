@@ -129,52 +129,51 @@ class RandomQuote(Resource):
 
 api.add_resource(RandomQuote, '/api/random_quote')
 
+# class DeleteQuote(Resource):
+#    def delete(self, quote_id):
+#        conn = psycopg2.connect(
+#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
+#        cur = conn.cursor()
 
-class DeleteQuote(Resource):
-    def delete(self, quote_id):
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
+#        cur.execute("DELETE FROM citations WHERE id=%s;", (quote_id,))
+#        deleted_rows = cur.rowcount
 
-        cur.execute("DELETE FROM citations WHERE id=%s;", (quote_id,))
-        deleted_rows = cur.rowcount
+#        conn.commit()
+#        cur.close()
+#        conn.close()
 
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        if deleted_rows > 0:
-            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} deleted"})
-        else:
-            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
-
-
-api.add_resource(DeleteQuote, '/api/delete_quote/<int:quote_id>')
+#        if deleted_rows > 0:
+#            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} deleted"})
+#        else:
+#            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
 
 
-class AddQuote(Resource):
-    def post(self):
-        data = request.get_json()
-
-        auteur = data.get('auteur')
-        date_creation = data.get('date_creation')
-        citation = data.get('citation')
-
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
-
-        cur.execute("INSERT INTO citations (auteur, date_creation, citation) VALUES (%s, %s, %s);",
-                    (auteur, date_creation, citation))
-        conn.commit()
-
-        cur.close()
-        conn.close()
-
-        return jsonify({"status": "success", "message": "Citation added"})
+# api.add_resource(DeleteQuote, '/api/delete_quote/<int:quote_id>')
 
 
-api.add_resource(AddQuote, '/api/add_quote')
+# class AddQuote(Resource):
+#    def post(self):
+#        data = request.get_json()
+
+#        auteur = data.get('auteur')
+#        date_creation = data.get('date_creation')
+#        citation = data.get('citation')
+
+#        conn = psycopg2.connect(
+#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
+#        cur = conn.cursor()
+
+#        cur.execute("INSERT INTO citations (auteur, date_creation, citation) VALUES (%s, %s, %s);",
+#                    (auteur, date_creation, citation))
+#        conn.commit()
+
+#        cur.close()
+#        conn.close()
+
+#        return jsonify({"status": "success", "message": "Citation added"})
+
+
+# api.add_resource(AddQuote, '/api/add_quote')
 
 
 class QuoteByID(Resource):
@@ -204,33 +203,33 @@ class QuoteByID(Resource):
 api.add_resource(QuoteByID, "/api/quote/<int:quote_id>")
 
 
-class UpdateQuote(Resource):
-    def put(self, quote_id):
-        data = request.get_json()
+# class UpdateQuote(Resource):
+#    def put(self, quote_id):
+#        data = request.get_json()
 
-        auteur = data.get('auteur')
-        date_creation = data.get('date_creation')
-        citation = data.get('citation')
+#       auteur = data.get('auteur')
+#       date_creation = data.get('date_creation')
+#       citation = data.get('citation')
 
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
+#        conn = psycopg2.connect(
+#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
+#        cur = conn.cursor()
 
-        cur.execute("UPDATE citations SET auteur=%s, date_creation=%s, citation=%s WHERE id=%s;",
-                    (auteur, date_creation, citation, quote_id))
-        updated_rows = cur.rowcount
-        conn.commit()
+#        cur.execute("UPDATE citations SET auteur=%s, date_creation=%s, citation=%s WHERE id=%s;",
+#                    (auteur, date_creation, citation, quote_id))
+#        updated_rows = cur.rowcount
+#        conn.commit()
 
-        cur.close()
-        conn.close()
+#        cur.close()
+#        conn.close()
 
-        if updated_rows > 0:
-            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} updated"})
-        else:
-            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
+#        if updated_rows > 0:
+#            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} updated"})
+#        else:
+#            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
 
 
-api.add_resource(UpdateQuote, '/api/update_quote/<int:quote_id>')
+# api.add_resource(UpdateQuote, '/api/update_quote/<int:quote_id>')
 
 if __name__ == '__main__':
     app.run(debug=True)
