@@ -1,10 +1,10 @@
 openapi: 3.0.0
 info:
   title: API de citations aléatoires
-  description: API permettant de récupérer, ajouter, mettre à jour et supprimer des citations aléatoires à partir d'une base de données PostgreSQL
+  description: API permettant de récupérer des citations aléatoires à partir d'une base de données PostgreSQL
   version: 1.0.0
 servers:
-  - url: https://qotd-api.herokuapp.com/api
+  - url: https://qotd-api-ne8l.onrender.com/api
 paths:
   /random_quote:
     get:
@@ -19,19 +19,15 @@ paths:
                 properties:
                   id:
                     type: integer
-                    description: Identifiant unique de la citation
                   auteur:
                     type: string
-                    description: Nom de l'auteur de la citation
                   date_creation:
                     type: string
                     format: date
-                    description: Date à laquelle la citation a été faite
                   citation:
                     type: string
-                    description: Texte de la citation elle-même
         "404":
-          description: Aucune citation trouvée dans la base de données
+          description: Aucune citation trouvée
           content:
             application/json:
               schema:
@@ -39,183 +35,12 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Message d'erreur expliquant pourquoi aucune citation n'a été trouvée
-  /delete_quote/{quote_id}:
-    delete:
-      summary: Supprime une citation à partir de son identifiant unique
-      parameters:
-        - in: path
-          name: quote_id
-          description: Identifiant unique de la citation à supprimer
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Citation supprimée avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Statut de la réponse (ici "success" car la citation a été supprimée avec succès)
-                  message:
-                    type: string
-                    description: Message indiquant que la citation a été supprimée avec succès
-        "404":
-          description: Citation non trouvée dans la base de données
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Statut de la réponse (ici "error" car la citation n'a pas été trouvée)
-                  message:
-                    type: string
-                    description: Message indiquant que la citation n'a pas été trouvée
-  /update_quote/{quote_id}:
-    put:
-      summary: Met à jour une citation existante à partir de son identifiant unique
-      parameters:
-        - in: path
-          name: quote_id
-          description: Identifiant unique de la citation à mettre à jour
-          required: true
-          schema:
-            type: integer
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auteur:
-                  type: string
-                  description: Nouveau nom de l'auteur de la citation
-                date_creation:
-                  type: string
-                  format: date
-                  description: Nouvelle date à laquelle la citation a été faite
-                citation:
-                  type: string
-                  description: Nouveau texte de la citation
-      responses:
-        "200":
-          description: Citation mise à jour avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Statut de la réponse (ici "success" car la citation a été mise à jour avec succès)
-                  message:
-                    type: string
-                    description: Message indiquant que la citation a été mise à jour avec succès
-        "404":
-          description: Citation non trouvée dans la base de données
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Statut de la réponse (ici "error" car la citation n'a pas été trouvée)
-                  message:
-                    type: string
-                    description: Message indiquant que la citation n'a pas été trouvée
-  /add_quote:
-    post:
-      summary: Ajoute une nouvelle citation à la base de données
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                auteur:
-                  type: string
-                  description: Nom de l'auteur de la citation à ajouter
-                  example: Jane Doe
-                date_creation:
-                  type: string
-                  format: date
-                  description: Date à laquelle la citation a été faite
-                  example: 2022-04-01
-                citation:
-                  type: string
-                  description: Texte de la citation elle-même
-                  example: "La vie est une aventure audacieuse ou rien du tout"
-      responses:
-        "200":
-          description: Citation ajoutée avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    description: Statut de la réponse (ici "success" car la citation a été ajoutée avec succès)
-                  message:
-                    type: string
-                    description: Message indiquant que la citation a été ajoutée avec succès
-                    example: "Citation ajoutée avec succès"
-  /quote/{quote_id}:
-    get:
-      summary: Récupère une citation à partir de son identifiant unique
-      parameters:
-        - in: path
-          name: quote_id
-          description: Identifiant unique de la citation à récupérer
-          required: true
-          schema:
-            type: integer
-      responses:
-        "200":
-          description: Citation récupérée avec succès
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                    description: Identifiant unique de la citation
-                  auteur:
-                    type: string
-                    description: Nom de l'auteur de la citation
-                  citation:
-                    type: string
-                    description: Texte de la citation elle-même
-                  date_creation:
-                    type: string
-                    format: date
-                    description: Date à laquelle la citation a été faite
-        "404":
-          description: Citation non trouvée dans la base de données
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                    description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
   /daily_quote:
     get:
-      summary: Récupère une citation aléatoire du jour
+      summary: Récupère une citation du jour (basée sur la date)
       responses:
         "200":
-          description: Citation récupérée avec succès
+          description: Citation du jour récupérée avec succès
           content:
             application/json:
               schema:
@@ -223,19 +48,15 @@ paths:
                 properties:
                   id:
                     type: integer
-                    description: Identifiant unique de la citation
                   auteur:
                     type: string
-                    description: Nom de l'auteur de la citation
-                  citation:
-                    type: string
-                    description: Texte de la citation elle-même
                   date_creation:
                     type: string
                     format: date
-                    description: Date à laquelle la citation a été faite
+                  citation:
+                    type: string
         "404":
-          description: Citation non trouvée dans la base de données
+          description: Aucune citation trouvée
           content:
             application/json:
               schema:
@@ -243,10 +64,9 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Message d'erreur expliquant pourquoi la citation n'a pas été trouvée dans la base de données
   /quotes:
     get:
-      summary: Récupère toutes les citations de la base de données
+      summary: Récupère toutes les citations
       responses:
         "200":
           description: Citations récupérées avec succès
@@ -259,19 +79,15 @@ paths:
                   properties:
                     id:
                       type: integer
-                      description: Identifiant unique de la citation
                     auteur:
                       type: string
-                      description: Nom de l'auteur de la citation
                     citation:
                       type: string
-                      description: Texte de la citation elle-même
                     date_creation:
                       type: string
                       format: date
-                      description: Date à laquelle la citation a été faite
         "404":
-          description: Aucune citation trouvée dans la base de données
+          description: Aucune citation trouvée
           content:
             application/json:
               schema:
@@ -279,4 +95,38 @@ paths:
                 properties:
                   error:
                     type: string
-                    description: Message d'erreur expliquant pourquoi aucune citation n'a été trouvée dans la base de données
+  /quote/{quote_id}:
+    get:
+      summary: Récupère une citation par ID
+      parameters:
+        - in: path
+          name: quote_id
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Citation récupérée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+                  auteur:
+                    type: string
+                  citation:
+                    type: string
+                  date_creation:
+                    type: string
+                    format: date
+        "404":
+          description: Citation non trouvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string

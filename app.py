@@ -1,19 +1,24 @@
-from flask_restful import Resource
-from flask import jsonify
-from datetime import datetime
-from flask import Flask, request, jsonify
+import os
+from flask import Flask, request, jsonify, send_from_directory
 from flask_restful import Api, Resource
-from flask import send_from_directory
 from flask_cors import CORS
-import psycopg2
-import random
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from datetime import datetime
+import random
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+
+class Citation(db.Model):
+    __tablename__ = 'citations'
+    id = db.Column(db.Integer, primary_key=True)
+    auteur = db.Column(db.Text, nullable=False)
+    date_creation = db.Column(db.Date, nullable=False)
+    citation = db.Column(db.Text, nullable=False)
+
 CORS(app)
 api = Api(app)
 
@@ -28,32 +33,23 @@ class DailyQuote(Resource):
     def get(self):
         random.seed(random_seed_based_on_date())
 
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
-
-        cur.execute("SELECT COUNT(*) FROM citations;")
-        total_citations = cur.fetchone()[0]
+        total_citations = Citation.query.count()
 
         if total_citations > 0:
             random_id = random.randint(1, total_citations)
-            cur.execute("SELECT * FROM citations WHERE id=%s;", (random_id,))
-            quote = cur.fetchone()
+            quote = Citation.query.get(random_id)
 
             if quote:
                 quote_data = {
-                    "id": quote[0],
-                    "auteur": quote[1],
-                    "date_creation": str(quote[2]),
-                    "citation": quote[3]
+                    "id": quote.id,
+                    "auteur": quote.auteur,
+                    "date_creation": quote.date_creation.strftime('%Y-%m-%d'),
+                    "citation": quote.citation
                 }
             else:
                 quote_data = {"error": "Citation not found"}
         else:
             quote_data = {"error": "No citations in the database"}
-
-        cur.close()
-        conn.close()
 
         return jsonify(quote_data)
 
@@ -63,28 +59,20 @@ api.add_resource(DailyQuote, '/api/daily_quote')
 
 class AllQuotes(Resource):
     def get(self):
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
-
-        cur.execute(
-            "SELECT id, auteur, citation, date_creation FROM citations;")
-        quotes = cur.fetchall()
+        quotes = Citation.query.all()
 
         quotes_data = []
         for quote in quotes:
             quote_data = {
-                "id": quote[0],
-                "auteur": quote[1],
-                "citation": quote[2],
-                "date_creation": quote[3].strftime('%Y-%m-%d')
+                "id": quote.id,
+                "auteur": quote.auteur,
+                "citation": quote.citation,
+                "date_creation": quote.date_creation.strftime('%Y-%m-%d')
             }
             quotes_data.append(quote_data)
 
-        cur.close()
-        conn.close()
-
         return jsonify(quotes_data)
+
 
 
 api.add_resource(AllQuotes, "/api/quotes")
@@ -102,32 +90,23 @@ def send_openapi():
 
 class RandomQuote(Resource):
     def get(self):
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
-
-        cur.execute("SELECT COUNT(*) FROM citations;")
-        total_citations = cur.fetchone()[0]
+        total_citations = Citation.query.count()
 
         if total_citations > 0:
             random_id = random.randint(1, total_citations)
-            cur.execute("SELECT * FROM citations WHERE id=%s;", (random_id,))
-            quote = cur.fetchone()
+            quote = Citation.query.get(random_id)
 
             if quote:
                 quote_data = {
-                    "id": quote[0],
-                    "auteur": quote[1],
-                    "date_creation": str(quote[2]),
-                    "citation": quote[3]
+                    "id": quote.id,
+                    "auteur": quote.auteur,
+                    "date_creation": quote.date_creation.strftime('%Y-%m-%d'),
+                    "citation": quote.citation
                 }
             else:
                 quote_data = {"error": "Citation not found"}
         else:
             quote_data = {"error": "No citations in the database"}
-
-        cur.close()
-        conn.close()
 
         return jsonify(quote_data)
 
@@ -183,26 +162,18 @@ api.add_resource(RandomQuote, '/api/random_quote')
 
 class QuoteByID(Resource):
     def get(self, quote_id):
-        conn = psycopg2.connect(
-            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-        cur = conn.cursor()
-
-        cur.execute(
-            "SELECT id, auteur, citation, date_creation FROM citations WHERE id=%s", (quote_id,))
-        quote = cur.fetchone()
+        quote = Citation.query.get(quote_id)
 
         if quote is None:
             return {"error": "Quote not found"}, 404
 
-        cur.close()
-        conn.close()
-
         return {
-            "id": quote[0],
-            "auteur": quote[1],
-            "citation": quote[2],
-            "date_creation": quote[3].strftime('%Y-%m-%d')
+            "id": quote.id,
+            "auteur": quote.auteur,
+            "citation": quote.citation,
+            "date_creation": quote.date_creation.strftime('%Y-%m-%d')
         }
+
 
 
 api.add_resource(QuoteByID, "/api/quote/<int:quote_id>")
