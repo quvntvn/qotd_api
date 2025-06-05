@@ -8,7 +8,7 @@ from datetime import datetime
 import random
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"]
+app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"].strip()
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 

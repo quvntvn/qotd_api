@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "pgOptions": {
+                "ssl": {
+                    "rejectUnauthorized": false
+                }
+            },
+            "previewLimit": 50,
+            "server": "interchange.proxy.rlwy.net",
+            "port": 17961,
+            "driver": "PostgreSQL",
+            "name": "RailwayDB",
+            "database": "railway",
+            "username": "postgres",
+            "password": "lbQqsTiAkidUoZImNhJMcBTDhPuvTQDq"
+        }
+    ]
+}
