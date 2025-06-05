@@ -1,211 +1,168 @@
 import os
-from flask import Flask, request, jsonify, send_from_directory
+from datetime import datetime, date
+from flask import Flask, jsonify, send_from_directory
 from flask_restful import Api, Resource
 from flask_cors import CORS
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from datetime import datetime
-import random
 
 app = Flask(__name__)
 app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["DATABASE_URL"].strip()
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+# --- DB --------------------------------------------------------------------
+
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 
+
 class Citation(db.Model):
-    __tablename__ = 'citations'
+    """Table `citations`
+    id              : SERIAL / Primary key
+    auteur          : TEXT not null
+    date_creation   : DATE (nullable)
+    citation        : TEXT not null
+    """
+
+    __tablename__ = "citations"
+
     id = db.Column(db.Integer, primary_key=True)
     auteur = db.Column(db.Text, nullable=False)
-    date_creation = db.Column(db.Date, nullable=False)
+    # Nullable pour accepter les dates inconnues
+    date_creation = db.Column(db.Date, nullable=True)
     citation = db.Column(db.Text, nullable=False)
+
+
+# --- Flask‑RESTful ----------------------------------------------------------
 
 CORS(app)
 api = Api(app)
 
 
-def random_seed_based_on_date():
-    today = datetime.now()
-    seed = today.year + today.month + today.day
-    return seed
+def _quote_for_day(target_date: date | None = None):
+    """Retourne la citation associée au *jour de l'année* (1‑365).
+
+    · Si l'année est bissextile (366 jours) et qu'il n'y a que 365 citations,
+      le 29 février reprend la citation du 1ᵉʳ mars (index modulo).
+
+    · Si la table contient moins de 365 entrées, on boucle avec modulo.
+      Si elle en contient plus, seules les 365 premières seront utilisées.
+    """
+
+    if target_date is None:
+        target_date = datetime.utcnow().date()
+
+    day_of_year = target_date.timetuple().tm_yday  # 1‑366
+    total = Citation.query.count()
+
+    if total == 0:
+        return None
+
+    # Transforme en index 0‑(total‑1)
+    index = (day_of_year - 1) % total
+
+    # Récupère la citation par décalage plutôt que par id aléatoire pour être
+    # insensible aux « trous » éventuels dans les IDs (p. ex. après suppressions)
+    return (
+        Citation.query.order_by(Citation.id)
+        .offset(index)
+        .limit(1)
+        .first()
+    )
 
 
 class DailyQuote(Resource):
+    """Citation du jour – déterministe par jour de l'année."""
+
     def get(self):
-        random.seed(random_seed_based_on_date())
+        quote = _quote_for_day()
 
-        total_citations = Citation.query.count()
+        if quote is None:
+            return jsonify({"error": "No citations in the database"})
 
-        if total_citations > 0:
-            random_id = random.randint(1, total_citations)
-            quote = Citation.query.get(random_id)
-
-            if quote:
-                quote_data = {
-                    "id": quote.id,
-                    "auteur": quote.auteur,
-                    "date_creation": quote.date_creation.strftime('%Y-%m-%d'),
-                    "citation": quote.citation
-                }
-            else:
-                quote_data = {"error": "Citation not found"}
-        else:
-            quote_data = {"error": "No citations in the database"}
-
-        return jsonify(quote_data)
+        return jsonify({
+            "id": quote.id,
+            "auteur": quote.auteur,
+            "date_creation": quote.date_creation.isoformat() if quote.date_creation else None,
+            "citation": quote.citation,
+        })
 
 
-api.add_resource(DailyQuote, '/api/daily_quote')
+api.add_resource(DailyQuote, "/api/daily_quote")
 
 
 class AllQuotes(Resource):
     def get(self):
-        quotes = Citation.query.all()
-
-        quotes_data = []
-        for quote in quotes:
-            quote_data = {
-                "id": quote.id,
-                "auteur": quote.auteur,
-                "citation": quote.citation,
-                "date_creation": quote.date_creation.strftime('%Y-%m-%d')
+        quotes = Citation.query.order_by(Citation.id).all()
+        return jsonify([
+            {
+                "id": q.id,
+                "auteur": q.auteur,
+                "citation": q.citation,
+                "date_creation": q.date_creation.isoformat() if q.date_creation else None,
             }
-            quotes_data.append(quote_data)
-
-        return jsonify(quotes_data)
-
+            for q in quotes
+        ])
 
 
 api.add_resource(AllQuotes, "/api/quotes")
 
 
-@app.route('/swagger/<path:path>')
-def send_swagger(path):
-    return send_from_directory('swagger', path)
-
-
-@app.route('/openapi.yaml')
-def send_openapi():
-    return send_from_directory('.', 'openapi.yaml')
-
-
 class RandomQuote(Resource):
+    """Reste inchangé : citation aléatoire parmi toutes."""
+
     def get(self):
-        total_citations = Citation.query.count()
+        total = Citation.query.count()
+        if total == 0:
+            return jsonify({"error": "No citations in the database"})
 
-        if total_citations > 0:
-            random_id = random.randint(1, total_citations)
-            quote = Citation.query.get(random_id)
+        # Choix aléatoire sécurisé via offset pour éviter le biais lié aux IDs
+        from random import randint
 
-            if quote:
-                quote_data = {
-                    "id": quote.id,
-                    "auteur": quote.auteur,
-                    "date_creation": quote.date_creation.strftime('%Y-%m-%d'),
-                    "citation": quote.citation
-                }
-            else:
-                quote_data = {"error": "Citation not found"}
-        else:
-            quote_data = {"error": "No citations in the database"}
+        offset = randint(0, total - 1)
+        quote = Citation.query.offset(offset).limit(1).first()
 
-        return jsonify(quote_data)
+        return jsonify({
+            "id": quote.id,
+            "auteur": quote.auteur,
+            "date_creation": quote.date_creation.isoformat() if quote.date_creation else None,
+            "citation": quote.citation,
+        })
 
 
-api.add_resource(RandomQuote, '/api/random_quote')
-
-# class DeleteQuote(Resource):
-#    def delete(self, quote_id):
-#        conn = psycopg2.connect(
-#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-#        cur = conn.cursor()
-
-#        cur.execute("DELETE FROM citations WHERE id=%s;", (quote_id,))
-#        deleted_rows = cur.rowcount
-
-#        conn.commit()
-#        cur.close()
-#        conn.close()
-
-#        if deleted_rows > 0:
-#            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} deleted"})
-#        else:
-#            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
-
-
-# api.add_resource(DeleteQuote, '/api/delete_quote/<int:quote_id>')
-
-
-# class AddQuote(Resource):
-#    def post(self):
-#        data = request.get_json()
-
-#        auteur = data.get('auteur')
-#        date_creation = data.get('date_creation')
-#        citation = data.get('citation')
-
-#        conn = psycopg2.connect(
-#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-#        cur = conn.cursor()
-
-#        cur.execute("INSERT INTO citations (auteur, date_creation, citation) VALUES (%s, %s, %s);",
-#                    (auteur, date_creation, citation))
-#        conn.commit()
-
-#        cur.close()
-#        conn.close()
-
-#        return jsonify({"status": "success", "message": "Citation added"})
-
-
-# api.add_resource(AddQuote, '/api/add_quote')
+api.add_resource(RandomQuote, "/api/random_quote")
 
 
 class QuoteByID(Resource):
-    def get(self, quote_id):
+    def get(self, quote_id: int):
         quote = Citation.query.get(quote_id)
-
         if quote is None:
             return {"error": "Quote not found"}, 404
-
         return {
             "id": quote.id,
             "auteur": quote.auteur,
             "citation": quote.citation,
-            "date_creation": quote.date_creation.strftime('%Y-%m-%d')
+            "date_creation": quote.date_creation.isoformat() if quote.date_creation else None,
         }
-
 
 
 api.add_resource(QuoteByID, "/api/quote/<int:quote_id>")
 
 
-# class UpdateQuote(Resource):
-#    def put(self, quote_id):
-#        data = request.get_json()
+# --- Static files (Swagger / OpenAPI) --------------------------------------
 
-#       auteur = data.get('auteur')
-#       date_creation = data.get('date_creation')
-#       citation = data.get('citation')
-
-#        conn = psycopg2.connect(
-#            "dbname=vidlhusi user=vidlhusi password=u3aP566U2_RYk8GtBufXTz3Na3867Do4 host=lucky.db.elephantsql.com")
-#        cur = conn.cursor()
-
-#        cur.execute("UPDATE citations SET auteur=%s, date_creation=%s, citation=%s WHERE id=%s;",
-#                    (auteur, date_creation, citation, quote_id))
-#        updated_rows = cur.rowcount
-#        conn.commit()
-
-#        cur.close()
-#        conn.close()
-
-#        if updated_rows > 0:
-#            return jsonify({"status": "success", "message": f"Citation with ID {quote_id} updated"})
-#        else:
-#            return jsonify({"status": "error", "message": f"Citation with ID {quote_id} not found"})
+@app.route("/swagger/<path:path>")
+def send_swagger(path):
+    return send_from_directory("swagger", path)
 
 
-# api.add_resource(UpdateQuote, '/api/update_quote/<int:quote_id>')
+@app.route("/openapi.yaml")
+def send_openapi():
+    return send_from_directory(".", "openapi.yaml")
 
-if __name__ == '__main__':
-    app.run(debug=True)
+
+# ---------------------------------------------------------------------------
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=os.environ.get("FLASK_DEBUG") == "1")
