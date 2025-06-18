@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, date
+from zoneinfo import ZoneInfo  # Ajoute cette importation
 from flask import Flask, jsonify, send_from_directory
 from flask_restful import Api, Resource
 from flask_cors import CORS
@@ -50,7 +51,9 @@ def _quote_for_day(target_date: date | None = None):
     """
 
     if target_date is None:
-        target_date = datetime.utcnow().date()
+        # Prend la date actuelle à Paris
+        paris_now = datetime.now(ZoneInfo("Europe/Paris"))
+        target_date = paris_now.date()
 
     day_of_year = target_date.timetuple().tm_yday  # 1‑366
     total = Citation.query.count()
@@ -58,7 +61,6 @@ def _quote_for_day(target_date: date | None = None):
     if total == 0:
         return None
 
-    # Transforme en index 0‑(total‑1)
     index = (day_of_year - 1) % total
 
     # Récupère la citation par décalage plutôt que par id aléatoire pour être
